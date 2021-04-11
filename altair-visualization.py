@@ -85,7 +85,7 @@ alt.Chart(df, title="Distribuição do valor de aluguel dos imóveis por cidade 
     height=300,    
 ).interactive()
 
-# Removido os _outliers_, vamos agora analisar o valor médio de aluguel dos imóveis nas cidades, sem considerar ainda as características do imóvel.
+# Removidos os _outliers_, vamos agora analisar o valor médio de aluguel dos imóveis nas cidades, sem considerar ainda as características do imóvel.
 
 alt.Chart(df, title="Valor médio do aluguel de imóveis por cidade").mark_bar().encode(
     alt.Y("city", title="Cidade", sort=alt.EncodingSortField(field="total (R$)", op="average", order="ascending")),
@@ -134,7 +134,7 @@ seletor_area = alt.Chart(df).mark_point(size=200).encode(
 
 seletor_area
 
-# Nota-se que existem apenas 3 imóveis com área maior do que 5000. Nesse caso, vamos excluir esse imóveis para evitar que a barra de seleção de área fique com esses amplos espaços e desníveis. Para isso, passando o mouse sobre o último opnto antes de 5000, nota-se que o valor é 2000. Sendo assim, vamos adotar esse valor como corte.
+# Nota-se que existem apenas 3 imóveis com área maior do que 5000. Nesse caso, vamos excluir esse imóveis para evitar que a barra de seleção de área fique desse modo. Para isso, passando o mouse sobre o último ponto antes de 5000, nota-se que o valor é 2000. Sendo assim, vamos adotar esse valor como corte.
 
 df = df[df["area"] <= 2000]
 
@@ -162,6 +162,27 @@ seletor_area
 df = df[df["area"] <= 1100]
 
 # Atualizando o chart para selecionar a Área desejada (area)
+
+brush_area = alt.selection_interval(encodings=['x'])
+
+seletor_area = alt.Chart(df).mark_point(size=200).encode(
+    alt.X('area:Q', scale=alt.Scale(zero=False), title="Área", axis=alt.Axis(tickCount=10)), 
+    color=alt.condition(brush_area, 'count()', alt.value('lightgray'), 
+                        legend=alt.Legend(title="Número de imóveis", 
+                                          direction="horizontal", 
+                                          offset=90)),
+    tooltip="area"
+).add_selection(
+    brush_area
+).properties(
+    width=600,
+) 
+
+seletor_area
+
+# Com a barra de seleção de área ok, vamos apenas modificar a variável visual de ponto para barra para melhor visualização.
+
+# Modificando a variável visual do chart melhor visualização (area)
 
 brush_area = alt.selection_interval(encodings=['x'], empty='all')
 
@@ -351,9 +372,9 @@ graficos3 = alt.Chart(df).mark_circle().add_selection(
 
 graficos1 & graficos2 & graficos3
 
-# A partir dos gráficos de dispersão, é possível visualizar uma leve correlação do preço total com duas variáveis: a taxa de aluguel (_rent amount_) e o seguro de incêndio (_fire insurance_). Contudo, acredita-se que isso não é o bastante para responder a pergunta. Portanto, vamos calcular a correção entre as variáveis do banco de dados.
+# A partir dos gráficos de dispersão, é possível visualizar uma leve correlação do preço total com duas variáveis: a taxa de aluguel (_rent amount_) e o seguro de incêndio (_fire insurance_). Contudo, acredita-se que isso ainda não é o bastante para responder a pergunta. Portanto, vamos calcular a correção entre as variáveis do banco de dados.
 
-# A correlação é calculada usando o próprio método para _dataframe_ do pandas. O resultado é então organizado para ser armazenado em outro _dataframe_, de modo a plotar as descobertas.
+# A correlação é calculada usando o próprio método para _dataframe_ do pandas, o .corr(). O resultado é então organizado para ser armazenado em outro _dataframe_, de modo a plotar as descobertas.
 
 dados_correlacionados = df.corr().stack().reset_index().rename(columns={0: 'correlacao', 'level_0': 'variavel1', 'level_1': 'variavel2'})
 dados_correlacionados['label_correlacao'] = dados_correlacionados['correlacao'].map('{:.2f}'.format)  # Arredondando
@@ -387,8 +408,8 @@ heatmap = base.mark_rect().encode(
 heatmap + text 
 
 # A partir do _heatmap_ criado, é possível notar algumas correlações interessantes:
-# - Há 93% de correlação entre a taxa de seguro de incêndio e o preço total do aluguel;
-# - Há 96% de correlação entre o preço do aluguel sozinho e o preço total do aluguel;
-# - Há 99% de correlação entre a taxa de seguro de incêndio e a taxa de aluguel (sem ser total).
+# - Há 93% de correlação entre a taxa de seguro de incêndio (_fire insurance_) e o preço total do aluguel;
+# - Há 96% de correlação entre o preço do aluguel sozinho (_rent amount_) e o preço total do aluguel;
+# - Há 99% de correlação entre a taxa de seguro de incêndio (_fire insurance_) e a taxa de aluguel (sem ser total) (_rent amount_).
 #
 # Diante disso, é possível afirmar que há uma correlação significativa das variáveis *taxa de seguro de incêndio* e *preço do aluguel sozinho* com o preço total do aluguel dos imóveis. Portanto, essas são as variáveis que mais "influenciam" no preço total do aluguel dos imóveis.
